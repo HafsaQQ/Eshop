@@ -1,0 +1,103 @@
+<%- include('partials/header'); -%>
+<script></script>
+<div class="container">
+  <div class="grid-container">
+    <% products.map(function(product) { %>
+    <div class="grid-item">
+      <!-- add out of stock on top -->
+      <% if (product.quantity == 0) { %>
+      <p class="out-of-stock-label">Out of Stock</p>
+      <% } %>
+
+      <img
+        width="100px"
+        height="100px"
+        class="product-image"
+        src="<%= product.image %>"
+        alt="product image"
+      />
+      <h3 class="product-title"><%= product.title %></h3>
+      <p class="product-description"><%= product.description %></p>
+      <p class="product-price">Price: ₹<%= product.price %></p>
+      <p class="product-category">Category: <%= product.category %></p>
+      <p class="product-quantity">Quantity: <%= product.quantity %></p>
+      <!-- date format dd monthfull year -->
+      <p class="product-created-at">
+        Added on: <%= product.createdAt.toDateString() %>
+      </p>
+      <div style="display: flex; justify-content: center; margin-top: 10px">
+        <!-- style the button according to quantity -->
+        <% if (product.quantity > 0) { %>
+
+        <button
+          onclick="buyNow('<%= product._id %>')"
+          style="margin-top: 0; margin-bottom: 30px"
+          id="buyNow"
+        >
+          Buy Now
+        </button>
+        <% } else { %>
+        <button
+          onclick="buyNow('<%= product._id %>')"
+          style="
+            margin-top: 0;
+            margin-bottom: 30px;
+            opacity: 50%;
+            cursor: not-allowed;
+          "
+          ;
+          id="buyNow"
+          disabled
+        >
+          Buy Now
+        </button>
+        <% } %>
+      </div>
+    </div>
+    <% } ) %>
+  </div>
+</div>
+<dialog id="orderPlacedModal">
+  <div class="grid-item">
+    <h3 class="product-title">Order Placed</h3>
+    <p class="product-description">Your order has been placed successfully</p>
+    <div style="display: flex; justify-content: center; margin-top: 10px">
+      <button
+        onclick="window.location.href='/store'"
+        style="margin-top: 0; margin-bottom: 30px"
+        id="buyNow"
+      >
+        Continue Shopping
+      </button>
+    </div>
+  </div>
+</dialog>
+<script>
+  const orderPlacedModal = document.querySelector("#orderPlacedModal");
+  const buyNow = async (id) => {
+    try {
+      const res = await fetch("/buy", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: id,
+          quantity: 1,
+        }),
+      });
+      const data = await res.json();
+      console.log(data);
+
+      if (data.status === "success") {
+        orderPlacedModal.showModal();
+      } else {
+        alert("Product not added to cart");
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+</script>
+
+<%- include('partials/footer'); -%>

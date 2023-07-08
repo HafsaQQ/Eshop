@@ -1,0 +1,210 @@
+<%- include('partials/header'); -%>
+<div class="container">
+  <div style="display: flex; justify-content: flex-end">
+    <button style="margin-top: 0; margin-bottom: 30px" id="addProductBtn">
+      Add Product
+    </button>
+  </div>
+  <div class="grid-container">
+    <% products.map(function(product) { %>
+    <div class="grid-item">
+      <img
+        width="100px"
+        height="100px"
+        class="product-image"
+        src="<%= product.image %>"
+        alt="product image"
+      />
+      <h3 class="product-title"><%= product.title %></h3>
+      <p class="product-description">
+        <%= product.description.length > 20 ? product.description.slice(0,20) +
+        "..." : product.description %>
+      </p>
+      <p class="product-price">Price: ₹<%= product.price %></p>
+      <p class="product-category">Category: <%= product.category %></p>
+      <p class="product-quantity">Quantity: <%= product.quantity %></p>
+      <!-- date format dd monthfull year -->
+      <p class="product-created-at">
+        Added on: <%= product.createdAt.toDateString() %>
+      </p>
+      <div style="display: flex; justify-content: center; gap: 10px">
+        <button
+          style="margin-top: 10px; background: red; color: white"
+          id="deleteProduct"
+          onclick="deleteProduct('<%= product._id %>')"
+        >
+          Delete
+        </button>
+        <button
+          style="margin-top: 10px; background: blue; color: white"
+          id="updateProduct"
+          onclick="updateProductFn('<%= product._id %>')"
+        >
+          Update
+        </button>
+      </div>
+    </div>
+    <% } ) %>
+  </div>
+</div>
+<dialog id="addProductModal">
+  <form action="/dashboard" method="POST" enctype="multipart/form-data">
+    <div style="display: flex; justify-content: flex-end">
+      <button style="margin-top: 0" type="button" id="closeAddModal">X</button>
+    </div>
+    <label for="title">Title</label>
+    <input type="text" name="title" id="title" />
+    <label for="description">Description</label>
+    <input type="text" name="description" id="description" />
+    <label for="price">Price</label>
+    <input type="number" name="price" id="price" />
+    <label for="image">Image</label>
+    <input type="file" name="image" id="image" />
+    <label for="category">Category</label>
+    <input type="text" name="category" id="category" />
+    <label for="quantity">Quantity</label>
+    <input type="number" name="quantity" id="quantity" />
+    <button type="submit">Add</button>
+  </form>
+</dialog>
+
+<!-- update form -->
+<dialog id="updateProductModal">
+  <form
+    name="updateProduct"
+    action="/dashboard"
+    method="PATCH"
+    enctype="multipart/form-data"
+  >
+    <div style="display: flex; justify-content: flex-end">
+      <button type="button" id="closeUpdateModal" style="margin-top: 0">
+        X
+      </button>
+    </div>
+    <label for="title">Title</label>
+    <input type="text" name="title" id="uodpateTitle" />
+    <label for="description">Description</label>
+    <input type="text" name="description" id="updateDescription" />
+    <label for="price">Price</label>
+    <input type="number" name="price" id="updatePrice" />
+    <label for="category">Category</label>
+    <input type="text" name="category" id="updateCategory" />
+    <label for="quantity">Quantity</label>
+    <input type="number" name="quantity" id="updateQuantity" />
+    <button type="submit">Update</button>
+  </form>
+</dialog>
+<script>
+  const updateEl = document.querySelector("#updateProduct");
+  const addEl = document.querySelector("#addProductBtn");
+  const addModalEl = document.querySelector("#addProductModal");
+  const updateModalEl = document.querySelector("#updateProductModal");
+  const closeUpdateModalEl = document.querySelector("#closeUpdateModal");
+  const closeAddModalEl = document.querySelector("#closeAddModal");
+
+  addEl.addEventListener("click", function () {
+    addModalEl.showModal();
+  });
+
+  closeUpdateModalEl.addEventListener("click", function () {
+    updateModalEl.close();
+  });
+
+  closeAddModalEl.addEventListener("click", function () {
+    addModalEl.close();
+  });
+
+  const deleteProduct = (id) => {
+    fetch(`/product/${id}`, {
+      method: "DELETE",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        window.location.reload();
+      })
+      .catch((err) => console.log(err));
+  };
+
+  // post form data
+
+  const form = document.querySelector("form");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const title = form.title.value;
+    const description = form.description.value;
+    const price = form.price.value;
+    const image = form.image.value;
+    const category = form.category.value;
+
+    const formData = new FormData();
+
+    formData.append("title", form.title.value);
+    formData.append("description", form.description.value);
+    formData.append("price", form.price.value);
+    formData.append("uploaded_file", form.image.files[0]);
+    formData.append("category", form.category.value);
+    formData.append("quantity", form.quantity.value);
+
+    try {
+      const res = await fetch("/product", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      console.log(data);
+      window.location.reload();
+    } catch (err) {
+      console.log(err);
+    }
+  });
+
+  // update product
+  const updateProductFn = (id) => {
+    const updateModalEl = document.querySelector("#updateProductModal");
+    updateModalEl.showModal();
+    const updateForm = document.forms.updateProduct;
+    // first get the product data and fill the form
+    fetch(`/product/${id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        data = data.product;
+        updateForm.title.value = data.title;
+        updateForm.description.value = data.description;
+        updateForm.price.value = data.price;
+        updateForm.category.value = data.category;
+        updateForm.quantity.value = data.quantity;
+      })
+      .catch((err) => console.log(err));
+
+    // Update the product
+    updateForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const body = {
+        id: id,
+        title: updateForm.title.value,
+        description: updateForm.description.value,
+        price: updateForm.price.value,
+        category: updateForm.category.value,
+        quantity: updateForm.quantity.value,
+      };
+      // console.log(body);
+      try {
+        const res = await fetch(`/product/${id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        console.log(data);
+        window.location.reload();
+      } catch (err) {
+        console.log(err);
+      }
+    });
+  };
+</script>
+<%- include('partials/footer'); -%>
